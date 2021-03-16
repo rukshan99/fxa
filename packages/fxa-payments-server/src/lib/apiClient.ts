@@ -374,3 +374,33 @@ export async function apiDetachFailedPaymentMethod(params: {
   );
   return result;
 }
+
+export async function apiUpdateBillingAgreement(params: {
+  token: string;
+}): Promise<{
+  invoice_settings: Object;
+  subscriptions: Subscription[];
+}> {
+  const metricsOptions: Amplitude.EventProperties = {
+    paymentProvider: 'paypal',
+  };
+  Amplitude.updatePayment_PENDING(metricsOptions);
+  try {
+    const response = await apiFetch(
+      'POST',
+      `${config.servers.auth.url}/v1/oauth/subscriptions/paymentmethod/billing-agreement`,
+      { body: JSON.stringify(params) }
+    );
+    Amplitude.updatePayment_FULFILLED({
+      ...metricsOptions,
+    });
+
+    return response;
+  } catch (error) {
+    Amplitude.updatePayment_REJECTED({
+      ...metricsOptions,
+      error,
+    });
+    throw error;
+  }
+}
