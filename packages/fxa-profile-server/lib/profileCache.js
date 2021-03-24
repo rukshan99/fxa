@@ -6,6 +6,7 @@ const ScopeSet = require('fxa-shared').oauth.scopes;
 
 const P = require('./promise');
 const batch = require('./batch');
+const config = require('./config');
 
 // The returned profile info can vary depending on the scopes
 // present in the OAuth token.  We cache the result for common
@@ -74,6 +75,21 @@ module.exports = function profileCache(server, options) {
         // Since Hapi 17+ "When a server method is cached, the result no longer changes to an envelope with the result and ttl value."
         // This feature seems poorly documented. Best source for info is the following https://github.com/outmoded/discuss/issues/751
         flags.ttl = key ? undefined : 0;
+
+        if (result.avatarDefault) {
+          const displayName = result.displayName;
+          if (displayName && /^[a-zA-Z0-9]/.test(displayName)) {
+            result.avatar = `${config.get('publicUrl')}/v1/avatar/${
+              displayName[0]
+            }`;
+            result.avatarDefault = false;
+          } else if (/^[a-zA-Z0-9]/.test(result.email)) {
+            result.avatar = `${config.get('publicUrl')}/v1/avatar/${
+              result.email[0]
+            }`;
+            result.avatarDefault = false;
+          }
+        }
         return result;
       });
     },

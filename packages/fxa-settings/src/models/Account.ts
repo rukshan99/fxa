@@ -6,6 +6,7 @@ import {
   ApolloError,
   QueryLazyOptions,
 } from '@apollo/client';
+import config from '../lib/config';
 
 export interface DeviceLocation {
   city: string | null;
@@ -265,4 +266,27 @@ export function hasAccountRecovery(account: Account) {
 
 export function hasTwoStepAuthentication(account: Account) {
   return account.totp.exists && account.totp.verified;
+}
+
+export function getNextAvatar(
+  existingId?: string,
+  existingUrl?: string,
+  email?: string,
+  displayName?: string | null
+) {
+  const char =
+    displayName && /[a-zA-Z0-9]/.test(displayName)
+      ? displayName[0]
+      : email
+      ? email[0]
+      : '?';
+  const url = `${config.servers.profile.url}/v1/avatar/${char}`;
+  if (!existingId || existingId.startsWith('default-')) {
+    if (/[a-zA-Z0-9]/.test(char)) {
+      return { id: `default-${char}`, url };
+    }
+    return { id: null, url: null };
+  }
+
+  return { id: existingId, url: existingUrl };
 }
